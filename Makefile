@@ -3,6 +3,7 @@
 ############################################################## 
 CC = g++
 CFLAGS = -std=c++14 -g -Wall
+TAR_NAME = team_name_sharma_syakhroza_vujnovich_BufferPool.tar.gz
 
 all:
 	cd src;\
@@ -16,3 +17,5 @@ format:
 
 docs:
 	doxygen Doxyfile
+tar:
+	tar -czvf $(TAR_NAME) --exclude="*.tar.gz" --exclude="*.pdf" --exclude="docs" --exclude="README*" *
