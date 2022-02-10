@@ -42,7 +42,32 @@ void BufMgr::advanceClock() {
   clockHand = ++clockHand % numBufs;
 }
 
-void BufMgr::allocBuf(FrameId& frame) {}
+void BufMgr::allocBuf(FrameId& frame) {
+  FrameId startingFrameId = clockHand;
+  bool openFrameFound = false;
+  while (true && openFrameFound == false) {
+    advanceClock();
+    BufDesc currFrame = bufDescTable[clockHand];
+    if (currFrame.valid) {
+      if (currFrame.refbit) {
+        currFrame.refbit = false;
+        continue; // advance clock and try again
+      } else if (currFrame.pinCnt > 0) {
+        continue; // advance clock and try again
+      } else if (currFrame.dirty) {
+        // Flush page to disk
+      }
+      openFrameFound = true;
+      // Call "Set()" on the Frame
+      // Use the frame
+    }
+    else {
+      openFrameFound = true;
+      // Call "Set()" on the Frame
+      // Use the frame
+    }
+  }
+}
 
 void BufMgr::readPage(File& file, const PageId pageNo, Page*& page) {}
 
