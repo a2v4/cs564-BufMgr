@@ -39,33 +39,55 @@ BufMgr::BufMgr(std::uint32_t bufs)
 }
 
 void BufMgr::advanceClock() {
-  clockHand = ++clockHand % numBufs;
+  clockHand = (clockHand + 1) % numBufs;
 }
 
-void BufMgr::allocBuf(FrameId& frame) {
-  FrameId startingFrameId = clockHand;
+void BufMgr::allocBuf(FrameId &frame)
+{
   bool openFrameFound = false;
-  while (true && openFrameFound == false) {
+  int counter = -1;
+  while (counter < (int)numBufs && openFrameFound == false)
+  {
+    counter++;
     advanceClock();
     BufDesc currFrame = bufDescTable[clockHand];
-    if (currFrame.valid) {
-      if (currFrame.refbit) {
+    if (currFrame.valid == true)
+    {
+      if (currFrame.refbit == true)
+      {
         currFrame.refbit = false;
         continue; // advance clock and try again
-      } else if (currFrame.pinCnt > 0) {
+      }
+      else if (currFrame.pinCnt > 0)
+      {
         continue; // advance clock and try again
-      } else if (currFrame.dirty) {
-        // Flush page to disk
+      }
+      else if (currFrame.refbit == false && currFrame.pinCnt == 0)
+      {
+        // Use the frame
+        frame = clockHand;
+
+        if (currFrame.dirty)
+        {
+          // Flush page to disk
+          currFrame.file.writePage(bufPool[frame]);
+        }
+        hashTable.remove(currFrame.file, currFrame.pageNo);
       }
       openFrameFound = true;
-      // Call "Set()" on the Frame
-      // Use the frame
+      currFrame.clear();
     }
-    else {
+    else
+    {
+      // Use the frame
+      frame = clockHand;
       openFrameFound = true;
-      // Call "Set()" on the Frame
-      // Use the frame
+      currFrame.clear();
     }
+  }
+  if (openFrameFound == false)
+  {
+    throw BufferExceededException();
   }
 }
 
