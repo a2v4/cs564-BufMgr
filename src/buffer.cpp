@@ -39,7 +39,7 @@ BufMgr::BufMgr(std::uint32_t bufs)
 }
 
 void BufMgr::advanceClock() {
-  clockHand = ++clockHand % numBufs;
+  clockHand = (clockHand + 1) % numBufs;
 }
 
 void BufMgr::allocBuf(FrameId& frame) {}
@@ -52,7 +52,19 @@ void BufMgr::allocPage(File& file, PageId& pageNo, Page*& page) {}
 
 void BufMgr::flushFile(File& file) {}
 
-void BufMgr::disposePage(File& file, const PageId PageNo) {}
+void BufMgr::disposePage(File& file, const PageId PageNo) {
+  try {
+    FrameId frameNo = 0; // blank frameNo to use for search
+    hashTable.lookup(file, PageNo, frameNo);
+    hashTable.remove(file, PageNo);
+    bufDescTable[frameNo].clear();
+  } catch (HashNotFoundException& e) {
+    // not found, move on...
+  }
+  
+  // Delete file from page
+  file.deletePage(PageNo);
+}
 
 void BufMgr::printSelf(void) {
   int validFrames = 0;
