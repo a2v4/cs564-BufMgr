@@ -91,7 +91,45 @@ void BufMgr::allocBuf(FrameId &frame)
   }
 }
 
-void BufMgr::readPage(File& file, const PageId pageNo, Page*& page) {}
+void BufMgr::readPage(File &file, const PageId pageNo, Page *&page)
+{
+  BufDesc frame;
+  FrameId frameNo = 0;
+
+  for (BufDesc desc : bufDescTable)
+  {
+    if (desc.pageNo == pageNo)
+    {
+      frameNo = desc.frameNo;
+      frame = desc;
+      break;
+    }
+  }
+  // check if page is in the hashtable
+  try
+  {
+    hashTable.lookup(file, pageNo, frameNo);
+    //page is bufferPool so set refBit, increase pinCnt for page
+    frame.refbit = true;
+    frame.pinCnt++;
+    //return pointer to frame containing page
+    for (uint32_t i = 0; i < numBufs; i++)
+    {
+      if (bufPool[i] == page)
+      {
+      }
+    }
+  }
+  catch (HashNotFoundException e)
+  {
+    //page not in buffer pool so call allocBuf()
+    allocBuf(frameNo);
+    //read in page from disk
+    file.readPage(pageNo);
+    //insert page into hashtable
+    hashTable.insert(file, pageNo, frameNo);
+  }
+}
 
 void BufMgr::unPinPage(File& file, const PageId pageNo, const bool dirty) {}
 
