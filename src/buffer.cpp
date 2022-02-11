@@ -39,7 +39,7 @@ BufMgr::BufMgr(std::uint32_t bufs)
 }
 
 void BufMgr::advanceClock() {
-  clockHand = ++clockHand % numBufs;
+  clockHand = (clockHand + 1) % numBufs;
 }
 
 void BufMgr::allocBuf(FrameId& frame) {}
