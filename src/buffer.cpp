@@ -46,7 +46,27 @@ void BufMgr::allocBuf(FrameId& frame) {}
 
 void BufMgr::readPage(File& file, const PageId pageNo, Page*& page) {}
 
-void BufMgr::unPinPage(File& file, const PageId pageNo, const bool dirty) {}
+void BufMgr::unPinPage(File &file, const PageId pageNo, const bool dirty)
+{
+  if (!hashTable.lookup(file, pageNo, .frameNo))
+  {
+  }
+  else
+  {
+    if (.dirty)
+    {
+      .dirty = false;
+    }
+    if (file.pinCnt == 0)
+    {
+      throws PageNotPinnedException(file, pageNo, .frameNo);
+    }
+    else
+    {
+      .pinCnt -= 1;
+    }
+  }
+}
 
 void BufMgr::allocPage(File& file, PageId& pageNo, Page*& page) {}
 
