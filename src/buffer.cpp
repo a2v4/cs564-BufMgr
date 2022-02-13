@@ -133,7 +133,31 @@ void BufMgr::readPage(File &file, const PageId pageNo, Page *&page)
 
 void BufMgr::unPinPage(File& file, const PageId pageNo, const bool dirty) {}
 
-void BufMgr::allocPage(File& file, PageId& pageNo, Page*& page) {}
+void BufMgr::allocPage(File &file, PageId &pageNo, Page *&page)
+{
+  // The first step in this method is to allocate an empty page
+  // in the specified file by invoking the file.allocatePage() method
+  // This method will return a newly allocated page.
+  Page newPage = file.allocatePage();
+
+  // Then allocBuf() is called to obtain a buffer pool frame.
+  FrameId newFrameId;
+  allocBuf(newFrameId);
+  // add newPage to bufPool based on newFrameId index
+  bufPool[newFrameId] = newPage;
+
+  // The method returns both the page number of the
+  // newly allocated page to the caller via the pageNo
+  // parameter and a pointer to the buffer frame allocated
+  // for the page via the page parameter.
+  page = &bufPool[newFrameId];
+  pageNo = newPage.page_number();
+
+  // Next, an entry is inserted into the hash table and Set() is
+  // invoked on the frame to set it up properly
+  hashTable.insert(file, pageNo, newFrameId);
+  bufDescTable[newFrameId].Set(file, pageNo);
+}
 
 void BufMgr::flushFile(File& file) {}
 
