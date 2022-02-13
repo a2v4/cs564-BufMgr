@@ -105,17 +105,32 @@ void BufMgr::allocPage(File &file, PageId &pageNo, Page *&page)
   // Then allocBuf() is called to obtain a buffer pool frame.
   FrameId newFrameId;
   allocBuf(newFrameId);
+  // add newPage to bufPool based on newFrameId index
+  bufPool[newFrameId] = newPage;
 
   // The method returns both the page number of the
   // newly allocated page to the caller via the pageNo
   // parameter and a pointer to the buffer frame allocated
   // for the page via the page parameter.
   page = &bufPool[newFrameId];
-  pageNo = page->page_number();
+  pageNo = newPage.page_number();
+  std::cout << "allocPage - newFrameID: " << newFrameId << std::endl;
 
   // Next, an entry is inserted into the hash table and Set() is
   // invoked on the frame to set it up properly
-  hashTable.insert(file, pageNo, newFrameId);
+  try
+  {
+    // try {
+    // hashTable.lookup(file, pageNo, newFrameId);
+    // } catch (HashNotFoundException& e) {
+    //   std::cout << "badgerdb::HashNotFoundException" << std::endl;
+    // }
+    hashTable.insert(file, pageNo, newFrameId);
+  }
+  catch (...)
+  {
+    std::cout << "badgerdb::HashAlreadyPresentException" << std::endl;
+  }
   bufDescTable[newFrameId].Set(file, pageNo);
 }
 
