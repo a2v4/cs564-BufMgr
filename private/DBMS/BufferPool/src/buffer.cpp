@@ -90,28 +90,26 @@ void BufMgr::allocBuf(FrameId& fr) {
 }
 
 void BufMgr::readPage(File& file, const PageId pageNo, Page*& page) {
-  BufDesc frame;
   FrameId frameNo = 0;
-
-  for (BufDesc desc : bufDescTable)
-  {
-    if(desc.pageNo == pageNo){
-      frameNo = desc.frameNo;
-      frame = desc;
-      break;
-    }
-  }
+  
   // check if page is in the hashtable
   try {
     hashTable.lookup(file, pageNo, frameNo);
     //page is bufferPool so set refBit, increase pinCnt for page
-    frame.refbit = true;
-    frame.pinCnt++;
-    //return pointer to frame containing page 
+    for (BufDesc desc : bufDescTable)
+    {
+      if(desc.pageNo == pageNo){
+        frameNo = desc.frameNo;
+        desc.refbit = true;
+        desc.pinCnt++;
+        break;
+      }
+    }
     for (uint32_t i = 0; i < numBufs; i++)
     {
-      if(bufPool[i] == page) {
-        
+      if(bufPool[i] == *page) {
+        //return a pointer to the frame containing page
+        page = &desc.frameNo;
       }
     }
   }
@@ -126,12 +124,13 @@ void BufMgr::readPage(File& file, const PageId pageNo, Page*& page) {
   }
 }
 
-void BufMgr::unPinPage(File& file, const PageId pageNo, const bool dirty) {}
+void BufMgr::unPinPage(File& file, const PageId pageNo, const bool dirty) {
+  
+}
 
 void BufMgr::allocPage(File& file, PageId& pageNo, Page*& page) {}
 
 void BufMgr::flushFile(File& file) {
-  
 //Scan bufTable for pages belonging to the file
   for(BufDesc frame : bufDescTable) {
     //if page is dirty call file.writepage() then set dirty bit to false
