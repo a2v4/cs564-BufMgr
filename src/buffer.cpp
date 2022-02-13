@@ -95,23 +95,33 @@ void BufMgr::readPage(File& file, const PageId pageNo, Page*& page) {}
 
 void BufMgr::unPinPage(File &file, const PageId pageNo, const bool dirty)
 {
-  if (!hashTable.lookup(file, pageNo, .frameNo))
+  try
   {
+    // Check if page is in hashTable
+    FrameId frameNum; // to be replaced by the hashTable.lookup
+    hashTable.lookup(file, pageNo, frameNum);
+    bufDesc currBuffDesc = bufDescTable[frameNum];
+
+    if (currBuffDesc.pinCnt == 0)
+    {
+      // Throws PAGENOTPINNED if the pin count is already 0
+      throw PageNotPinnedException(file.filename_, pageNo, frameNum);
+    }
+    else if (currBuffDesc.pinCnt > 0)
+    {
+      // Decrements the pinCnt of the frame
+      --currBuffDesc.pinCnt;
+    }
+    if (dirty)
+    {
+      // if dirty == true, sets the dirty bit
+      currBuffDesc.dirty = true;
+    }
   }
-  else
+  catch (HashNotFoundException &e)
   {
-    if (.dirty)
-    {
-      .dirty = false;
-    }
-    if (file.pinCnt == 0)
-    {
-      throws PageNotPinnedException(file, pageNo, .frameNo);
-    }
-    else
-    {
-      .pinCnt -= 1;
-    }
+    // Does nothing if page is not found in the hash table lookup.
+    return;
   }
 }
 
