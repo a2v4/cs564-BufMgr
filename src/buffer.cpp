@@ -91,35 +91,15 @@ void BufMgr::allocBuf(FrameId &frame)
   }
 }
 
-void BufMgr::readPage(File& file, const PageId pageNo, Page*& page) {
-
-}
+void BufMgr::readPage(File& file, const PageId pageNo, Page*& page) {}
 
 void BufMgr::unPinPage(File& file, const PageId pageNo, const bool dirty) {}
 
 void BufMgr::allocPage(File& file, PageId& pageNo, Page*& page) {}
 
-// void BufMgr::flushFile2(File& file) {
-//   for (int i = 0; i < (int)numBufs; i++) {
-//     BufDesc currDesc = bufDescTable[i];
-//     // currDesc.file == file;
-//     if (currDesc.dirty) {
-//       currDesc.file.writePage(bufPool[i]);
-//       currDesc.dirty = false;
-//     }
-//     hashTable.remove(currDesc.file, currDesc.pageNo);
-//     if (currDesc.pinCnt > 0) {
-//       throw PagePinnedException(currDesc.file.filename, currDesc.pageNo, currDesc.frameNo);
-//     }
-//     if (Page::INVALID_NUMBER == currDesc.pageNo) {
-//       throw BadBufferException(currDesc.frameNo, currDesc.dirty, currDesc.valid, currDesc.refbit);
-//     }
-//   }
-// }
-
 void BufMgr::flushFile(File &file)
 {
-  //Scan bufTable for pages belonging to the file
+  // Scan bufTable for pages belonging to the file
   for (BufDesc frame : bufDescTable)
   {
     //if page is dirty call file.writepage() then set dirty bit to false
@@ -127,24 +107,31 @@ void BufMgr::flushFile(File &file)
     {
       if (frame.valid == false)
       {
-      throw BadBufferException(frame.frameNo, frame.dirty, frame.valid, frame.refbit);
+        throw BadBufferException(frame.frameNo, frame.dirty, frame.valid, frame.refbit);
       }
       if (frame.dirty)
       {
+        // if the page is dirty, call file.writePage() to flush the page to disk
+        // and then set the dirty bit for the page to false
+
         // file.writePage(frame.pageNo, Page)
         file.writePage(frame.pageNo, bufPool[frame.frameNo]);
         frame.dirty = false;
       }
-      // if (file is pinned)
-    if (frame.pinCnt > 0) {
-      throw PagePinnedException(frame.file.filename_, frame.pageNo, frame.frameNo);
-    }
-    if (Page::INVALID_NUMBER == frame.pageNo) {
-      throw BadBufferException(frame.frameNo, frame.dirty, frame.valid, frame.refbit);
-    }
-      //remove, remove(file, pagenumber), the page from hashtable
+      // Throws PagePinnedException if some page of the file is pinned.
+      if (frame.pinCnt > 0)
+      {
+        throw PagePinnedException(frame.file.filename_, frame.pageNo, frame.frameNo);
+      }
+      // Throws BadBufferException if an invalid page belonging to the file is encountered
+      if (Page::INVALID_NUMBER == frame.pageNo)
+      {
+        throw BadBufferException(frame.frameNo, frame.dirty, frame.valid, frame.refbit);
+      }
+      // remove the page from the hashtable (whether the page is clean or dirty)
       hashTable.remove(frame.file, frame.pageNo);
-      //clear() method of BufDesc for the page frame
+
+      // invoke the Clear() method of BufDesc for the page frame
       frame.clear();
       frame.pageNo = -1;
       frame.valid = false;
