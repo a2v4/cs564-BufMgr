@@ -130,7 +130,37 @@ void BufMgr::readPage(File &file, const PageId pageNo, Page *&page)
   }
 }
 
-void BufMgr::unPinPage(File& file, const PageId pageNo, const bool dirty) {}
+void BufMgr::unPinPage(File &file, const PageId pageNo, const bool dirty)
+{
+  try
+  {
+    // Check if page is in hashTable
+    FrameId frameNum; // to be replaced by the hashTable.lookup
+    hashTable.lookup(file, pageNo, frameNum);
+    bufDesc currBuffDesc = bufDescTable[frameNum];
+
+    if (currBuffDesc.pinCnt == 0)
+    {
+      // Throws PAGENOTPINNED if the pin count is already 0
+      throw PageNotPinnedException(file.filename_, pageNo, frameNum);
+    }
+    else if (currBuffDesc.pinCnt > 0)
+    {
+      // Decrements the pinCnt of the frame
+      --currBuffDesc.pinCnt;
+    }
+    if (dirty)
+    {
+      // if dirty == true, sets the dirty bit
+      currBuffDesc.dirty = true;
+    }
+  }
+  catch (HashNotFoundException &e)
+  {
+    // Does nothing if page is not found in the hash table lookup.
+    return;
+  }
+}
 
 void BufMgr::allocPage(File &file, PageId &pageNo, Page *&page)
 {
