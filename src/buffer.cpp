@@ -39,6 +39,7 @@ BufMgr::BufMgr(std::uint32_t bufs)
 }
 
 void BufMgr::advanceClock() {
+  std::cout << "called advanceClock()" << std::endl;
   clockHand = (clockHand + 1) % numBufs;
 }
 
@@ -85,6 +86,11 @@ void BufMgr::allocBuf(FrameId &frame)
       currFrame.clear();
     }
   }
+  std::cout << "clochHand: " << clockHand
+  << ", openFrameFound: " << openFrameFound
+  << ", counter: " << counter
+  << ", numBufs: " << numBufs
+  << std::endl;
   if (openFrameFound == false)
   {
     throw BufferExceededException();
