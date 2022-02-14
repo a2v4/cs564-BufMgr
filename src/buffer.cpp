@@ -232,7 +232,7 @@ void BufMgr::flushFile(File &file)
 
 void BufMgr::disposePage(File& file, const PageId PageNo) {
   try {
-    FrameId frameNo = 0; // blank frameNo to use for search
+    FrameId frameNo; // blank frameNo to use for search
     hashTable.lookup(file, PageNo, frameNo);
     hashTable.remove(file, PageNo);
     bufDescTable[frameNo].clear();
@@ -240,7 +240,7 @@ void BufMgr::disposePage(File& file, const PageId PageNo) {
     // not found, move on...
   }
   
-  // Delete file from page
+  // Delete page from file
   file.deletePage(PageNo);
 }
 
