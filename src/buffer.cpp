@@ -100,7 +100,7 @@ void BufMgr::unPinPage(File &file, const PageId pageNo, const bool dirty)
     // Check if page is in hashTable
     FrameId frameNum; // to be replaced by the hashTable.lookup
     hashTable.lookup(file, pageNo, frameNum);
-    bufDesc currBuffDesc = bufDescTable[frameNum];
+    BufDesc currBuffDesc = bufDescTable[frameNum];
 
     if (currBuffDesc.pinCnt == 0)
     {
