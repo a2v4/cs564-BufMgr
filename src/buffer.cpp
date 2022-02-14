@@ -39,6 +39,7 @@ BufMgr::BufMgr(std::uint32_t bufs)
 }
 
 void BufMgr::advanceClock() {
+  std::cout << "called advanceClock()" << std::endl;
   clockHand = (clockHand + 1) % numBufs;
 }
 
@@ -50,41 +51,53 @@ void BufMgr::allocBuf(FrameId &frame)
   {
     counter++;
     advanceClock();
-    BufDesc currFrame = bufDescTable[clockHand];
-    if (currFrame.valid == true)
+    std::cout << "\tclochHand: " << clockHand
+              << ", valid: " << bufDescTable[clockHand].valid
+              << ", refbit: " << bufDescTable[clockHand].refbit
+              << ", pinCnt: " << bufDescTable[clockHand].pinCnt
+              << ", dirty: " << bufDescTable[clockHand].dirty
+              << ", file: " << bufDescTable[clockHand].file.filename()
+              << std::endl;
+    // BufDesc bufDescTable[clockHand] = bufDescTable[clockHand];
+    if (bufDescTable[clockHand].valid == true)
     {
-      if (currFrame.refbit == true)
+      if (bufDescTable[clockHand].refbit == true)
       {
-        currFrame.refbit = false;
+        bufDescTable[clockHand].refbit = false;
         continue; // advance clock and try again
       }
-      else if (currFrame.pinCnt > 0)
+      else if (bufDescTable[clockHand].pinCnt > 0)
       {
         continue; // advance clock and try again
       }
-      else if (currFrame.refbit == false && currFrame.pinCnt == 0)
+      else if (bufDescTable[clockHand].refbit == false && bufDescTable[clockHand].pinCnt == 0)
       {
         // Use the frame
         frame = clockHand;
 
-        if (currFrame.dirty)
+        if (bufDescTable[clockHand].dirty)
         {
           // Flush page to disk
-          currFrame.file.writePage(bufPool[frame]);
+          bufDescTable[clockHand].file.writePage(bufPool[frame]);
         }
-        hashTable.remove(currFrame.file, currFrame.pageNo);
+        hashTable.remove(bufDescTable[clockHand].file, bufDescTable[clockHand].pageNo);
       }
       openFrameFound = true;
-      currFrame.clear();
+      bufDescTable[clockHand].clear();
     }
     else
     {
       // Use the frame
       frame = clockHand;
       openFrameFound = true;
-      currFrame.clear();
+      bufDescTable[frame].clear();
     }
   }
+  std::cout << "clochHand: " << clockHand
+            << ", openFrameFound: " << openFrameFound
+            << ", counter: " << counter
+            << ", numBufs: " << numBufs
+            << std::endl;
   if (openFrameFound == false)
   {
     throw BufferExceededException();
@@ -115,7 +128,9 @@ void BufMgr::readPage(File &file, const PageId pageNo, Page *&page)
 
     // Call the method file.readPage() to read the page
     // from disk into the buffer pool frame.
-    file.readPage(pageNo);
+    Page newPage = file.readPage(pageNo);
+    // Add newPage to bufPool at the index 'frameNo'
+    bufPool[frameNo] = newPage;
 
     // Next, insert the page into the hashtable
     hashTable.insert(file, pageNo, frameNo);
@@ -144,7 +159,9 @@ void BufMgr::unPinPage(File &file, const PageId pageNo, const bool dirty)
     else if (bufDescTable[frameNum].pinCnt > 0)
     {
       // Decrements the pinCnt of the frame
+      std::cout << "old pinCnt: " << bufDescTable[frameNum].pinCnt << std::endl;
       --bufDescTable[frameNum].pinCnt;
+      std::cout << "new pinCnt: " << bufDescTable[frameNum].pinCnt << std::endl;
     }
     if (dirty)
     {
@@ -178,10 +195,24 @@ void BufMgr::allocPage(File &file, PageId &pageNo, Page *&page)
   // for the page via the page parameter.
   page = &bufPool[newFrameId];
   pageNo = newPage.page_number();
+  std::cout << "allocPage - newFrameID: " << newFrameId << std::endl;
+
 
   // Next, an entry is inserted into the hash table and Set() is
   // invoked on the frame to set it up properly
-  hashTable.insert(file, pageNo, newFrameId);
+  try
+  {
+    // try {
+    // hashTable.lookup(file, pageNo, newFrameId);
+    // } catch (HashNotFoundException& e) {
+    //   std::cout << "badgerdb::HashNotFoundException" << std::endl;
+    // }
+    hashTable.insert(file, pageNo, newFrameId);
+  }
+  catch (...)
+  {
+    std::cout << "badgerdb::HashAlreadyPresentException" << std::endl;
+  }
   bufDescTable[newFrameId].Set(file, pageNo);
 }
 
