@@ -51,36 +51,36 @@ void BufMgr::allocBuf(FrameId &frame)
   {
     counter++;
     advanceClock();
-    BufDesc currFrame = bufDescTable[clockHand];
     std::cout << "\tclochHand: " << clockHand
-    << ", valid: " << currFrame.valid
-    << ", refbit: " << currFrame.refbit
-    << ", pinCnt: " << currFrame.pinCnt
-    << ", dirty: " << currFrame.dirty
-    << ", file: " << currFrame.file.filename()
-    << std::endl;
-    if (currFrame.valid == true)
+              << ", valid: " << bufDescTable[clockHand].valid
+              << ", refbit: " << bufDescTable[clockHand].refbit
+              << ", pinCnt: " << bufDescTable[clockHand].pinCnt
+              << ", dirty: " << bufDescTable[clockHand].dirty
+              << ", file: " << bufDescTable[clockHand].file.filename()
+              << std::endl;
+    // BufDesc bufDescTable[clockHand] = bufDescTable[clockHand];
+    if (bufDescTable[clockHand].valid == true)
     {
-      if (currFrame.refbit == true)
+      if (bufDescTable[clockHand].refbit == true)
       {
-        currFrame.refbit = false;
+        bufDescTable[clockHand].refbit = false;
         continue; // advance clock and try again
       }
-      else if (currFrame.pinCnt > 0)
+      else if (bufDescTable[clockHand].pinCnt > 0)
       {
         continue; // advance clock and try again
       }
-      else if (currFrame.refbit == false && currFrame.pinCnt == 0)
+      else if (bufDescTable[clockHand].refbit == false && bufDescTable[clockHand].pinCnt == 0)
       {
         // Use the frame
         frame = clockHand;
 
-        if (currFrame.dirty)
+        if (bufDescTable[clockHand].dirty)
         {
           // Flush page to disk
           bufDescTable[clockHand].file.writePage(bufPool[frame]);
         }
-        hashTable.remove(currFrame.file, currFrame.pageNo);
+        hashTable.remove(bufDescTable[clockHand].file, bufDescTable[clockHand].pageNo);
       }
       openFrameFound = true;
       bufDescTable[clockHand].clear();
@@ -90,14 +90,14 @@ void BufMgr::allocBuf(FrameId &frame)
       // Use the frame
       frame = clockHand;
       openFrameFound = true;
-      bufDescTable[clockHand].clear();
+      bufDescTable[frame].clear();
     }
   }
   std::cout << "clochHand: " << clockHand
-  << ", openFrameFound: " << openFrameFound
-  << ", counter: " << counter
-  << ", numBufs: " << numBufs
-  << std::endl;
+            << ", openFrameFound: " << openFrameFound
+            << ", counter: " << counter
+            << ", numBufs: " << numBufs
+            << std::endl;
   if (openFrameFound == false)
   {
     throw BufferExceededException();
