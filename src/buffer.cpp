@@ -78,19 +78,19 @@ void BufMgr::allocBuf(FrameId &frame)
         if (currFrame.dirty)
         {
           // Flush page to disk
-          currFrame.file.writePage(bufPool[frame]);
+          bufDescTable[clockHand].file.writePage(bufPool[frame]);
         }
         hashTable.remove(currFrame.file, currFrame.pageNo);
       }
       openFrameFound = true;
-      currFrame.clear();
+      bufDescTable[clockHand].clear();
     }
     else
     {
       // Use the frame
       frame = clockHand;
       openFrameFound = true;
-      currFrame.clear();
+      bufDescTable[clockHand].clear();
     }
   }
   std::cout << "clochHand: " << clockHand
@@ -114,12 +114,11 @@ void BufMgr::readPage(File &file, const PageId pageNo, Page *&page)
     // Check if page is in hashTable
     hashTable.lookup(file, pageNo, frameNo);
     // Case 2
-    BufDesc currBufDesc = bufDescTable[frameNo];
 
     // set the appropriate refbit
-    currBufDesc.refbit = true;
+    bufDescTable[frameNo].refbit = true;
     // increment the pinCnt for the page
-    currBufDesc.pinCnt++;
+    bufDescTable[frameNo].pinCnt++;
   }
   catch (HashNotFoundException& e)
   {
@@ -129,7 +128,9 @@ void BufMgr::readPage(File &file, const PageId pageNo, Page *&page)
 
     // Call the method file.readPage() to read the page
     // from disk into the buffer pool frame.
-    file.readPage(pageNo);
+    Page newPage = file.readPage(pageNo);
+    // Add newPage to bufPool at the index 'frameNo'
+    bufPool[frameNo] = newPage;
 
     // Next, insert the page into the hashtable
     hashTable.insert(file, pageNo, frameNo);
@@ -149,24 +150,23 @@ void BufMgr::unPinPage(File &file, const PageId pageNo, const bool dirty)
     // Check if page is in hashTable
     FrameId frameNum; // to be replaced by the hashTable.lookup
     hashTable.lookup(file, pageNo, frameNum);
-    BufDesc currBuffDesc = bufDescTable[frameNum];
 
-    if (currBuffDesc.pinCnt == 0)
+    if (bufDescTable[frameNum].pinCnt == 0)
     {
       // Throws PAGENOTPINNED if the pin count is already 0
       throw PageNotPinnedException(file.filename_, pageNo, frameNum);
     }
-    else if (currBuffDesc.pinCnt > 0)
+    else if (bufDescTable[frameNum].pinCnt > 0)
     {
       // Decrements the pinCnt of the frame
-      std::cout << "old pinCnt: " << currBuffDesc.pinCnt << std::endl;
-      bufDescTable[frameNum].pinCnt = bufDescTable[frameNum].pinCnt - 1;
-      std::cout << "new pinCnt: " << currBuffDesc.pinCnt << std::endl;
+      std::cout << "old pinCnt: " << bufDescTable[frameNum].pinCnt << std::endl;
+      --bufDescTable[frameNum].pinCnt;
+      std::cout << "new pinCnt: " << bufDescTable[frameNum].pinCnt << std::endl;
     }
     if (dirty)
     {
       // if dirty == true, sets the dirty bit
-      currBuffDesc.dirty = true;
+      bufDescTable[frameNum].dirty = true;
     }
   }
   catch (HashNotFoundException &e)
@@ -222,39 +222,38 @@ void BufMgr::flushFile(File &file)
   // for (BufDesc frame : bufDescTable)
   for (u_int32_t i = 0; i < numBufs; i++)
   {
-    BufDesc currBufDesc = bufDescTable[i];
     //if page is dirty call file.writepage() then set dirty bit to false
-    if (currBufDesc.file == file)
+    if (bufDescTable[i].file == file)
     {
-      if (currBufDesc.valid == false)
+      if (bufDescTable[i].valid == false)
       {
-        throw BadBufferException(currBufDesc.frameNo, currBufDesc.dirty, currBufDesc.valid, currBufDesc.refbit);
+        throw BadBufferException(bufDescTable[i].frameNo, bufDescTable[i].dirty, bufDescTable[i].valid, bufDescTable[i].refbit);
       }
       // Throws PagePinnedException if some page of the file is pinned.
-      if (currBufDesc.pinCnt > 0)
+      if (bufDescTable[i].pinCnt > 0)
       {
-        throw PagePinnedException(currBufDesc.file.filename(), currBufDesc.pageNo, currBufDesc.frameNo);
+        throw PagePinnedException(bufDescTable[i].file.filename(), bufDescTable[i].pageNo, bufDescTable[i].frameNo);
       }
-      if (currBufDesc.dirty)
+      if (bufDescTable[i].dirty)
       {
         // if the page is dirty, call file.writePage() to flush the page to disk
         // and then set the dirty bit for the page to false
 
-        // file.writePage(currBufDesc.pageNo, Page)
-        // currBufDesc.file.writePage(currBufDesc.pageNo, currBufDesc.pageNo);
-        currBufDesc.file.writePage(bufPool[i]);
-        currBufDesc.dirty = false;
+        // file.writePage(bufDescTable[i].pageNo, Page)
+        // bufDescTable[i].file.writePage(bufDescTable[i].pageNo, bufDescTable[i].pageNo);
+        bufDescTable[i].file.writePage(bufPool[i]);
+        bufDescTable[i].dirty = false;
       }
       // Throws BadBufferException if an invalid page belonging to the file is encountered
-      if (Page::INVALID_NUMBER == currBufDesc.pageNo)
+      if (Page::INVALID_NUMBER == bufDescTable[i].pageNo)
       {
-        throw BadBufferException(currBufDesc.frameNo, currBufDesc.dirty, currBufDesc.valid, currBufDesc.refbit);
+        throw BadBufferException(bufDescTable[i].frameNo, bufDescTable[i].dirty, bufDescTable[i].valid, bufDescTable[i].refbit);
       }
       // remove the page from the hashtable (whether the page is clean or dirty)
-      hashTable.remove(currBufDesc.file, currBufDesc.pageNo);
+      hashTable.remove(bufDescTable[i].file, bufDescTable[i].pageNo);
 
       // invoke the Clear() method of BufDesc for the page frame
-      currBufDesc.clear();
+      bufDescTable[i].clear();
     }
   }
 }
