@@ -50,39 +50,38 @@ void BufMgr::allocBuf(FrameId &frame)
   {
     counter++;
     advanceClock();
-    BufDesc currFrame = bufDescTable[clockHand];
-    if (currFrame.valid == true)
+    if (bufDescTable[clockHand].valid == true)
     {
-      if (currFrame.refbit == true)
+      if (bufDescTable[clockHand].refbit == true)
       {
-        currFrame.refbit = false;
+        bufDescTable[clockHand].refbit = false;
         continue; // advance clock and try again
       }
-      else if (currFrame.pinCnt > 0)
+      else if (bufDescTable[clockHand].pinCnt > 0)
       {
         continue; // advance clock and try again
       }
-      else if (currFrame.refbit == false && currFrame.pinCnt == 0)
+      else if (bufDescTable[clockHand].refbit == false && bufDescTable[clockHand].pinCnt == 0)
       {
         // Use the frame
         frame = clockHand;
 
-        if (currFrame.dirty)
+        if (bufDescTable[clockHand].dirty)
         {
           // Flush page to disk
-          currFrame.file.writePage(bufPool[frame]);
+          bufDescTable[clockHand].file.writePage(bufPool[frame]);
         }
-        hashTable.remove(currFrame.file, currFrame.pageNo);
+        hashTable.remove(bufDescTable[clockHand].file, bufDescTable[clockHand].pageNo);
       }
       openFrameFound = true;
-      currFrame.clear();
+      bufDescTable[clockHand].clear();
     }
     else
     {
       // Use the frame
       frame = clockHand;
       openFrameFound = true;
-      currFrame.clear();
+      bufDescTable[clockHand].clear();
     }
   }
   if (openFrameFound == false)
@@ -115,7 +114,9 @@ void BufMgr::readPage(File &file, const PageId pageNo, Page *&page)
 
     // Call the method file.readPage() to read the page
     // from disk into the buffer pool frame.
-    file.readPage(pageNo);
+    Page newPage = file.readPage(pageNo);
+    // Add newPage to bufPool at the index 'frameNo'
+    bufPool[frameNo] = newPage;
 
     // Next, insert the page into the hashtable
     hashTable.insert(file, pageNo, frameNo);
