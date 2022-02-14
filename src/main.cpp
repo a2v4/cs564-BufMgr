@@ -165,6 +165,7 @@ void test1(File &file1) {
     rid[i] = page->insertRecord(tmpbuf);
     bufMgr->unPinPage(file1, pid[i], true);
   }
+  bufMgr->printSelf();
 
   // Reading pages back...
   for (i = 0; i < num; i++) {
@@ -177,6 +178,7 @@ void test1(File &file1) {
   }
   std::cout << "Test 1 passed"
             << "\n";
+  bufMgr->printSelf();
 }
 
 void test2(File &file1, File &file2, File &file3) {
