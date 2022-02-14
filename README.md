@@ -7,15 +7,21 @@
 ################################################################################
 
 To build the source:
-  $ make
+```
+$ make
+```
 
 To build the real API documentation (requires Doxygen):
-  $ make docs
+```
+$ make docs
+```
 
 To reformat the code(requires clang):
-  $ make format
+```
+$ make format
+```
 
-To view the documentation, open docs/index.html in your web browser after
+To view the documentation, open `docs/index.html` in your web browser after
 running make docs.
 
 ################################################################################
