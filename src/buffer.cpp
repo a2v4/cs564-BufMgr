@@ -93,41 +93,40 @@ void BufMgr::allocBuf(FrameId &frame)
 
 void BufMgr::readPage(File &file, const PageId pageNo, Page *&page)
 {
-  FrameId frameNo = 0;
 
+  FrameId frameNo; // to be filled in by hashTable.lookup
   // check if page is in the hashtable
   try
   {
+    // Check if page is in hashTable
     hashTable.lookup(file, pageNo, frameNo);
-    //page is bufferPool so set refBit, increase pinCnt for page
-    for (BufDesc desc : bufDescTable)
-    {
-      if (desc.pageNo == pageNo)
-      {
-        frameNo = desc.frameNo;
-        desc.refbit = true;
-        desc.pinCnt++;
-        break;
-      }
-    }
-    for (uint32_t i = 0; i < numBufs; i++)
-    {
-      if (bufPool[i] == *page)
-      {
-        //return a pointer to the frame containing page
-        page = &desc.frameNo;
-      }
-    }
+    // Case 2
+    BufDesc currBufDesc = bufDescTable[frameNo];
+
+    // set the appropriate refbit
+    currBufDesc.refbit = true;
+    // increment the pinCnt for the page
+    currBufDesc.pinCnt++;
   }
-  catch (HashNotFoundException e)
+  catch (HashNotFoundException& e)
   {
-    //page not in buffer pool so call allocBuf()
+    // Case 1
+    // Call allocBuf() to allocate a buffer frame
     allocBuf(frameNo);
-    //read in page from disk
+
+    // Call the method file.readPage() to read the page
+    // from disk into the buffer pool frame.
     file.readPage(pageNo);
-    //insert page into hashtable
+
+    // Next, insert the page into the hashtable
     hashTable.insert(file, pageNo, frameNo);
+
+    // Finally, invoke Set() on the frame to set it up properly
+    bufDescTable[frameNo].Set(file, pageNo);
   }
+    // Return a pointer to the frame containing 
+    // the page via the page parameter.
+    page = &bufPool[frameNo];
 }
 
 void BufMgr::unPinPage(File &file, const PageId pageNo, const bool dirty)
