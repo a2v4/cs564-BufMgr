@@ -50,7 +50,6 @@ void BufMgr::allocBuf(FrameId &frame)
   {
     counter++;
     advanceClock();
-    // BufDesc bufDescTable[clockHand] = bufDescTable[clockHand];
     if (bufDescTable[clockHand].valid == true)
     {
       if (bufDescTable[clockHand].refbit == true)
@@ -82,7 +81,7 @@ void BufMgr::allocBuf(FrameId &frame)
       // Use the frame
       frame = clockHand;
       openFrameFound = true;
-      bufDescTable[frame].clear();
+      bufDescTable[clockHand].clear();
     }
   }
   if (openFrameFound == false)
@@ -115,7 +114,9 @@ void BufMgr::readPage(File &file, const PageId pageNo, Page *&page)
 
     // Call the method file.readPage() to read the page
     // from disk into the buffer pool frame.
-    file.readPage(pageNo);
+    Page newPage = file.readPage(pageNo);
+    // Add newPage to bufPool at the index 'frameNo'
+    bufPool[frameNo] = newPage;
 
     // Next, insert the page into the hashtable
     hashTable.insert(file, pageNo, frameNo);
