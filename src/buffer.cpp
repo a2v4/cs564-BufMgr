@@ -91,11 +91,101 @@ void BufMgr::allocBuf(FrameId &frame)
   }
 }
 
-void BufMgr::readPage(File& file, const PageId pageNo, Page*& page) {}
+void BufMgr::readPage(File &file, const PageId pageNo, Page *&page)
+{
 
-void BufMgr::unPinPage(File& file, const PageId pageNo, const bool dirty) {}
+  FrameId frameNo; // to be filled in by hashTable.lookup
+  // check if page is in the hashtable
+  try
+  {
+    // Check if page is in hashTable
+    hashTable.lookup(file, pageNo, frameNo);
+    // Case 2
+    BufDesc currBufDesc = bufDescTable[frameNo];
 
-void BufMgr::allocPage(File& file, PageId& pageNo, Page*& page) {}
+    // set the appropriate refbit
+    currBufDesc.refbit = true;
+    // increment the pinCnt for the page
+    currBufDesc.pinCnt++;
+  }
+  catch (HashNotFoundException& e)
+  {
+    // Case 1
+    // Call allocBuf() to allocate a buffer frame
+    allocBuf(frameNo);
+
+    // Call the method file.readPage() to read the page
+    // from disk into the buffer pool frame.
+    file.readPage(pageNo);
+
+    // Next, insert the page into the hashtable
+    hashTable.insert(file, pageNo, frameNo);
+
+    // Finally, invoke Set() on the frame to set it up properly
+    bufDescTable[frameNo].Set(file, pageNo);
+  }
+    // Return a pointer to the frame containing 
+    // the page via the page parameter.
+    page = &bufPool[frameNo];
+}
+
+void BufMgr::unPinPage(File &file, const PageId pageNo, const bool dirty)
+{
+  try
+  {
+    // Check if page is in hashTable
+    FrameId frameNum; // to be replaced by the hashTable.lookup
+    hashTable.lookup(file, pageNo, frameNum);
+    BufDesc currBuffDesc = bufDescTable[frameNum];
+
+    if (currBuffDesc.pinCnt == 0)
+    {
+      // Throws PAGENOTPINNED if the pin count is already 0
+      throw PageNotPinnedException(file.filename_, pageNo, frameNum);
+    }
+    else if (currBuffDesc.pinCnt > 0)
+    {
+      // Decrements the pinCnt of the frame
+      --currBuffDesc.pinCnt;
+    }
+    if (dirty)
+    {
+      // if dirty == true, sets the dirty bit
+      currBuffDesc.dirty = true;
+    }
+  }
+  catch (HashNotFoundException &e)
+  {
+    // Does nothing if page is not found in the hash table lookup.
+    return;
+  }
+}
+
+void BufMgr::allocPage(File &file, PageId &pageNo, Page *&page)
+{
+  // The first step in this method is to allocate an empty page
+  // in the specified file by invoking the file.allocatePage() method
+  // This method will return a newly allocated page.
+  Page newPage = file.allocatePage();
+
+  // Then allocBuf() is called to obtain a buffer pool frame.
+  FrameId newFrameId;
+  allocBuf(newFrameId);
+  // add newPage to bufPool based on newFrameId index
+  bufPool[newFrameId] = newPage;
+
+  // The method returns both the page number of the
+  // newly allocated page to the caller via the pageNo
+  // parameter and a pointer to the buffer frame allocated
+  // for the page via the page parameter.
+  page = &bufPool[newFrameId];
+  pageNo = newPage.page_number();
+
+  // Next, an entry is inserted into the hash table and Set() is
+  // invoked on the frame to set it up properly
+  hashTable.insert(file, pageNo, newFrameId);
+  bufDescTable[newFrameId].Set(file, pageNo);
+}
 
 void BufMgr::flushFile(File &file)
 {
