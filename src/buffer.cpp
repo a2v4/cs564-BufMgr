@@ -230,7 +230,19 @@ void BufMgr::flushFile(File &file)
   }
 }
 
-void BufMgr::disposePage(File& file, const PageId PageNo) {}
+void BufMgr::disposePage(File& file, const PageId PageNo) {
+  try {
+    FrameId frameNo; // blank frameNo to use for search
+    hashTable.lookup(file, PageNo, frameNo);
+    hashTable.remove(file, PageNo);
+    bufDescTable[frameNo].clear();
+  } catch (HashNotFoundException& e) {
+    // not found, move on...
+  }
+  
+  // Delete page from file
+  file.deletePage(PageNo);
+}
 
 void BufMgr::printSelf(void) {
   int validFrames = 0;
