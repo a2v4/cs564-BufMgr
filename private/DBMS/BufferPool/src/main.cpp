@@ -184,40 +184,6 @@ void test1(File &file1) {
             << "\n";
 }
 
-void test7(File &file6) {
-
-      // Allocating pages in a file...
-  for (i = 0; i < num; i++) {
-    bufMgr->allocPage(file6, pid[i], page);
-    sprintf(tmpbuf, "test.6 Page %u %7.1f", pid[i], (float)pid[i]);
-    rid[i] = page->insertRecord(tmpbuf);
-    bufMgr->disposePage(file6, pid[i]);
-    try {
-      bufMgr->disposePage(file6, pid[i]);
-      PRINT_ERROR("ERROR :: DISPOSING PAGE THATS ALREADY DISPOSED!");
-    } catch (const InvalidPageException &e) {
-          
-    }
-  }
-      std::cout << "Test 7 passed" << "\n";
-
-
-    // // Allocating page in a file...
-    // bufMgr->allocPage(file6, pid[0], page);
-    // sprintf(tmpbuf, "test.6 Page %u %7.1f", pid[0], (float)pid[0]);
-    // rid[0] = page->insertRecord(tmpbuf);
-    // //disposing the page
-    // bufMgr->disposePage(file6, pid[i]);
-    // //trying to dispose it again
-    // try {
-    //   bufMgr->disposePage(file6, pid[i]);
-    //   PRINT_ERROR("ERROR :: DISPOSING PAGE THATS ALREADY DISPOSED!");
-    // } catch (const HashNotFoundException &e) {
-    // }
-
-}
-
-
 void test2(File &file1, File &file2, File &file3) {
   // Writing and reading back multiple files
   // The page number and the value should match
@@ -338,6 +304,23 @@ void test6(File &file1) {
   bufMgr->flushFile(file1);
 }
 
+void test7(File &file6) {
+
+      // Allocating pages in a file...
+  for (i = 0; i < num; i++) {
+    bufMgr->allocPage(file6, pid[i], page);
+    sprintf(tmpbuf, "test.6 Page %u %7.1f", pid[i], (float)pid[i]);
+    rid[i] = page->insertRecord(tmpbuf);
+    bufMgr->disposePage(file6, pid[i]);
+    try {
+      bufMgr->disposePage(file6, pid[i]);
+      PRINT_ERROR("ERROR :: DISPOSING PAGE THATS ALREADY DISPOSED!");
+    } catch (const InvalidPageException &e) {
+          
+    }
+  }
+      std::cout << "Test 7 passed" << "\n";
+}
 
 
 
