@@ -12,6 +12,7 @@
 #include "exceptions/invalid_page_exception.h"
 #include "exceptions/page_not_pinned_exception.h"
 #include "exceptions/page_pinned_exception.h"
+#include "exceptions/hash_not_found_exception.h"
 #include "file_iterator.h"
 #include "page.h"
 #include "page_iterator.h"
@@ -40,6 +41,7 @@ void test3(File &file4);
 void test4(File &file4);
 void test5(File &file4);
 void test6(File &file1);
+void test7(File &file1);
 // Calls the above tests
 void testBufMgr();
 
@@ -111,6 +113,7 @@ void testBufMgr() {
   const std::string filename3 = "test.3";
   const std::string filename4 = "test.4";
   const std::string filename5 = "test.5";
+  const std::string filename6 = "test.6";
 
   // Clean up from any previous runs that crashed.
   try {
@@ -119,7 +122,10 @@ void testBufMgr() {
     File::remove(filename3);
     File::remove(filename4);
     File::remove(filename5);
-  } catch (const FileNotFoundException &e) {
+    File::remove(filename6);
+  }
+  catch (const FileNotFoundException &e)
+  {
   }
 
   {
@@ -128,7 +134,7 @@ void testBufMgr() {
     File file3 = File::create(filename3);
     File file4 = File::create(filename4);
     File file5 = File::create(filename5);
-
+    File file6 = File::create(filename6);
     // Test buffer manager
     // Comment tests which you do not wish to run now. Tests are dependent on
     // their preceding tests. So, they have to be run in the following order.
@@ -140,7 +146,7 @@ void testBufMgr() {
     test4(file4);
     test5(file5);
     test6(file1);
-
+    test7(file6);
     // Close the files by going out of scope
   }
 
@@ -150,7 +156,7 @@ void testBufMgr() {
   File::remove(filename3);
   File::remove(filename4);
   File::remove(filename5);
-
+  File::remove(filename6);
   std::cout << "\n"
             << "Passed all tests."
             << "\n";
@@ -177,6 +183,40 @@ void test1(File &file1) {
   std::cout << "Test 1 passed"
             << "\n";
 }
+
+void test7(File &file6) {
+
+      // Allocating pages in a file...
+  for (i = 0; i < num; i++) {
+    bufMgr->allocPage(file6, pid[i], page);
+    sprintf(tmpbuf, "test.6 Page %u %7.1f", pid[i], (float)pid[i]);
+    rid[i] = page->insertRecord(tmpbuf);
+    bufMgr->disposePage(file6, pid[i]);
+    try {
+      bufMgr->disposePage(file6, pid[i]);
+      PRINT_ERROR("ERROR :: DISPOSING PAGE THATS ALREADY DISPOSED!");
+    } catch (const InvalidPageException &e) {
+          
+    }
+  }
+      std::cout << "Test 7 passed" << "\n";
+
+
+    // // Allocating page in a file...
+    // bufMgr->allocPage(file6, pid[0], page);
+    // sprintf(tmpbuf, "test.6 Page %u %7.1f", pid[0], (float)pid[0]);
+    // rid[0] = page->insertRecord(tmpbuf);
+    // //disposing the page
+    // bufMgr->disposePage(file6, pid[i]);
+    // //trying to dispose it again
+    // try {
+    //   bufMgr->disposePage(file6, pid[i]);
+    //   PRINT_ERROR("ERROR :: DISPOSING PAGE THATS ALREADY DISPOSED!");
+    // } catch (const HashNotFoundException &e) {
+    // }
+
+}
+
 
 void test2(File &file1, File &file2, File &file3) {
   // Writing and reading back multiple files
@@ -297,3 +337,7 @@ void test6(File &file1) {
 
   bufMgr->flushFile(file1);
 }
+
+
+
+
